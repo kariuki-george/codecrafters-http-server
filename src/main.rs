@@ -23,19 +23,19 @@ fn main() {
 struct Response {
     status: u16,
     body: Option<String>,
-    status_reason: Option<String>,
+    status_reason: String,
 }
 
 impl Response {
     fn new() -> Response {
         Response {
             body: None,
-            status: 0,
-            status_reason: None,
+            status: 200,
+            status_reason: "OK".to_string(),
         }
     }
 
-    fn set_status(&mut self, status: u16, status_reason: Option<String>) -> Self {
+    fn set_status(&mut self, status: u16, status_reason: String) -> Self {
         self.status = status;
         self.status_reason = status_reason;
         self.to_owned()
@@ -53,11 +53,10 @@ impl Response {
             self.status = 200
         }
 
-        response_string.push_str(&format!("{} ", self.status));
+        response_string.push_str(&format!(" {}", self.status));
 
-        if let Some(status_reason) = self.status_reason.clone() {
-            response_string.push_str(&status_reason.to_string());
-        };
+        response_string.push_str(&format!(" {}", self.status_reason));
+
         response_string.push_str("\r\n");
 
         // Headers

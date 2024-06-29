@@ -61,7 +61,7 @@ fn main() {
                 // Write response
                 let mut response = Response::new();
                 if handler.is_none() {
-                    response.set_status(400, "Not Found".to_string());
+                    response.set_status(404, "Not Found".to_string());
                 }
 
                 let response = response.into_bytes();

@@ -47,7 +47,7 @@ impl Response {
     }
     fn as_string(&mut self) -> String {
         // Status Line
-        let mut response_string = String::from("HTTP/1.1 ");
+        let mut response_string = String::from("HTTP/1.1");
 
         if self.status == 0 {
             self.status = 200

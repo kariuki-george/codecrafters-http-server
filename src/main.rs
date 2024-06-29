@@ -6,7 +6,7 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
-                let mut response = Response::new().set_status(200, None);
+                let mut response = Response::new();
                 let response = response.into_bytes();
 
                 stream.write_all(&response).unwrap();

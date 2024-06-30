@@ -87,6 +87,12 @@ fn runner(request: Request) -> Response {
     if request.target == "/" {
         response.set_status(200, "OK".to_string());
     }
+    if request.target == "/user-agent" {
+        let user_agent = request.headers.get("User-Agent").unwrap();
+        response.set_header("Content-Type".to_string(), "text/plain".to_string());
+        response.set_status(200, "OK".to_string());
+        response.set_body(user_agent.into());
+    }
     response
 
     // let handler = handlers.get(&request.target);

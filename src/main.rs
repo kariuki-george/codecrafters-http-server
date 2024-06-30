@@ -10,8 +10,6 @@ use itertools::Itertools;
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
 
-    // Files directory
-
     for stream in listener.incoming() {
         // For concurrency, spawn a thread to handle a connection
         match stream {
@@ -59,7 +57,7 @@ fn main() {
                 // Write response
                 println!("{:?}", response);
 
-                let response = response.into_bytes();
+                let response = response.as_bytes();
 
                 stream.write_all(&response).unwrap();
                 stream.flush().unwrap();
@@ -72,7 +70,7 @@ fn main() {
 }
 
 fn runner(request: Request) -> Response {
-    // Just do enough to pass the test for the router
+    // Just do enough to pass the tests instead of building or using a full blown router.
 
     let mut response = Response::new();
 
@@ -101,7 +99,11 @@ fn runner(request: Request) -> Response {
         let args = args.collect_vec();
         for (index, arg) in args.clone().iter().enumerate() {
             if arg == "--directory" {
-                path = args[index + 1].clone();
+                if args.len() == index + 1 {
+                    // Handle error gracefully
+                    panic!()
+                }
+                path.clone_from(&args[index + 1]);
             }
         }
 
@@ -163,7 +165,6 @@ fn runner(request: Request) -> Response {
 
                         e.write_all(body).unwrap();
                         let compressed_bytes = e.finish().unwrap();
-                        println!("Here \n{:?}", compressed_bytes);
 
                         response.set_body(compressed_bytes);
                     }
@@ -185,7 +186,6 @@ struct Request {
     http_version: String,
     headers: HashMap<String, String>,
     body: Option<String>,
-    query_param: HashMap<String, String>,
 }
 
 impl Request {
@@ -196,7 +196,6 @@ impl Request {
             headers: HashMap::new(),
             http_version: String::new(),
             target: String::new(),
-            query_param: HashMap::new(),
         };
 
         // Parse input request string
@@ -255,8 +254,6 @@ enum HTTPMethod {
     Post,
 }
 
-trait ResponseValue {}
-
 #[derive(Clone, Debug)]
 struct Response {
     status: u16,
@@ -311,10 +308,9 @@ impl Response {
         response_string.push_str("\r\n");
 
         // Full response string
-        println!("{response_string}");
         response_string
     }
-    fn into_bytes(&mut self) -> Vec<u8> {
+    fn as_bytes(&mut self) -> Vec<u8> {
         let mut response_bytes = self.as_string().into_bytes();
         // Add the body
         // Body

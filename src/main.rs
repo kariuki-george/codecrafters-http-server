@@ -80,7 +80,7 @@ fn runner(request: Request) -> Response {
     if request.target.starts_with("/echo") {
         let (_, data) = request.target.rsplit_once('/').unwrap();
 
-        response.set_header("Content-Type".to_string(), json!("text/plain"));
+        response.set_header("Content-Type".to_string(), "text/plain".into());
         response.set_body(json!(format!("{data}")));
     }
     response

@@ -13,6 +13,8 @@ fn main() {
     // handlers.insert("/".to_string(), handler);
     // handlers.insert("/echo/{str}".to_string(), echo_handler);
 
+    // Files directory
+
     for stream in listener.incoming() {
         // For concurrency, spawn a thread to handle a connection
         match stream {
@@ -92,6 +94,38 @@ fn runner(request: Request) -> Response {
         response.set_header("Content-Type".to_string(), "text/plain".to_string());
         response.set_status(200, "OK".to_string());
         response.set_body(user_agent.into());
+    }
+    if request.target.starts_with("/files/") {
+        let (_, file) = request.target.rsplit_once('/').unwrap();
+        let args = std::env::args();
+        let mut path = String::new();
+        // Could write cleaner code
+        let args = args.collect_vec();
+        for (index, arg) in args.clone().iter().enumerate() {
+            if arg == "--directory" {
+                path = args[index + 1].clone();
+            }
+        }
+
+        //  Check if the file exists in the provided directory
+        path.push_str(file);
+
+        let mut file = match std::fs::OpenOptions::new().read(true).open(path) {
+            Ok(file) => file,
+            Err(_) => return response,
+        };
+
+        let mut contents = String::new();
+
+        if file.read_to_string(&mut contents).is_err() {
+            return response;
+        }
+        response.set_status(200, "OK".to_string());
+        response.set_header(
+            "Content-Type".to_string(),
+            "application/octet-stream".to_string(),
+        );
+        response.set_body(contents);
     }
     response
 

@@ -80,7 +80,7 @@ fn runner(request: Request) -> Response {
     if request.target.starts_with("/echo") {
         let (_, data) = request.target.rsplit_once('/').unwrap();
 
-        response.set_header("Content-Type".to_string(), "text/plain".into());
+        response.set_header("Content-Type".to_string(), format!("text/plain"));
         response.set_body(data.into());
     }
     response
@@ -215,12 +215,14 @@ enum HTTPMethod {
     Post,
 }
 
+trait ResponseValue {}
+
 #[derive(Clone, Debug)]
 struct Response {
     status: u16,
     body: Option<String>,
     status_reason: String,
-    headers: HashMap<String, serde_json::Value>,
+    headers: HashMap<String, String>,
 }
 
 impl Response {
@@ -239,11 +241,11 @@ impl Response {
     }
 
     fn set_body(&mut self, body: String) {
-        self.set_header("Content-Length".to_string(), body.len().into());
+        self.set_header("Content-Length".to_string(), format!("{}", body.len()));
         self.body = Some(body);
     }
 
-    fn set_header(&mut self, name: String, value: Value) {
+    fn set_header(&mut self, name: String, value: String) {
         self.headers.insert(name, value);
     }
     fn as_string(&mut self) -> String {
@@ -262,7 +264,9 @@ impl Response {
 
         // Headers
         for (name, value) in self.headers.clone() {
-            response_string.push_str(format!("{}: {}\r\n", name, value.clone().take()).as_str());
+            let header = format!("{}: {}\r\n", name, value);
+            println!("{header}");
+            response_string.push_str(&header);
         }
         response_string.push_str("\r\n");
 

@@ -77,10 +77,11 @@ fn runner(request: Request) -> Response {
 
     let mut response = Response::new();
 
-    if request.target.starts_with("/echo") {
+    if request.target.starts_with("/echo/") {
         let (_, data) = request.target.rsplit_once('/').unwrap();
 
-        response.set_header("Content-Type".to_string(), format!("text/plain"));
+        response.set_header("Content-Type".to_string(), "text/plain".to_string());
+        response.set_status(200, "OK".to_string());
         response.set_body(data.into());
     }
     response
@@ -229,8 +230,8 @@ impl Response {
     fn new() -> Response {
         Response {
             body: None,
-            status: 200,
-            status_reason: "OK".to_string(),
+            status: 404,
+            status_reason: "Not Found".to_string(),
             headers: HashMap::new(),
         }
     }
@@ -265,7 +266,7 @@ impl Response {
         // Headers
         for (name, value) in self.headers.clone() {
             let header = format!("{}: {}\r\n", name, value);
-            println!("{header}");
+
             response_string.push_str(&header);
         }
         response_string.push_str("\r\n");
@@ -274,8 +275,6 @@ impl Response {
         if let Some(body) = self.body.clone() {
             response_string.push_str(&body);
         }
-
-        println!("{response_string}");
 
         // Full response string
         response_string

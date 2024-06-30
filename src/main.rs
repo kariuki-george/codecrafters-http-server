@@ -150,10 +150,20 @@ fn runner(request: Request) -> Response {
 
     // Compress the body
 
-    if let Some(encoding) = request.headers.get("Accept-Encoding") {
+    if let Some(encodings) = request.headers.get("Accept-Encoding") {
         // If not supported
-        if encoding == "gzip" {
-            response.set_header("Content-Encoding".to_string(), "gzip".to_string());
+        let supported_encodings = ["gzip"];
+
+        for encoding in encodings.split(',') {
+            let encoding = encoding.trim();
+            if supported_encodings.contains(&encoding) {
+                // Use it
+                if encoding == "gzip" {
+                    response.set_header("Content-Encoding".to_string(), "gzip".to_string());
+                }
+
+                break;
+            }
         }
     }
 

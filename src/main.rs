@@ -14,6 +14,7 @@ fn main() {
     // handlers.insert("/echo/{str}".to_string(), echo_handler);
 
     for stream in listener.incoming() {
+        // For concurrency, spawn a thread to handle a connection
         match stream {
             Ok(mut stream) => {
                 // Read request

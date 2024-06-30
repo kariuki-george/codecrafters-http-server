@@ -84,6 +84,9 @@ fn runner(request: Request) -> Response {
         response.set_status(200, "OK".to_string());
         response.set_body(data.into());
     }
+    if request.target == "/" {
+        response.set_status(200, "OK".to_string());
+    }
     response
 
     // let handler = handlers.get(&request.target);

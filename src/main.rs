@@ -4,14 +4,11 @@ use std::{
     net::TcpListener,
 };
 
+use flate2::{write::ZlibEncoder, Compression};
 use itertools::Itertools;
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
-
-    // let mut handlers: HashMap<String, fn(Request) -> Response> = HashMap::new();
-    // handlers.insert("/".to_string(), handler);
-    // handlers.insert("/echo/{str}".to_string(), echo_handler);
 
     // Files directory
 
@@ -75,7 +72,7 @@ fn main() {
 }
 
 fn runner(request: Request) -> Response {
-    // Just do enough to pass the test
+    // Just do enough to pass the test for the router
 
     let mut response = Response::new();
 
@@ -84,7 +81,8 @@ fn runner(request: Request) -> Response {
 
         response.set_header("Content-Type".to_string(), "text/plain".to_string());
         response.set_status(200, "OK".to_string());
-        response.set_body(data.into());
+
+        response.set_body(data.as_bytes().into());
     }
     if request.target == "/" {
         response.set_status(200, "OK".to_string());
@@ -93,7 +91,7 @@ fn runner(request: Request) -> Response {
         let user_agent = request.headers.get("User-Agent").unwrap();
         response.set_header("Content-Type".to_string(), "text/plain".to_string());
         response.set_status(200, "OK".to_string());
-        response.set_body(user_agent.into());
+        response.set_body(user_agent.as_bytes().into());
     }
     if request.target.starts_with("/files/") {
         let (_, file) = request.target.rsplit_once('/').unwrap();
@@ -128,7 +126,7 @@ fn runner(request: Request) -> Response {
                     "Content-Type".to_string(),
                     "application/octet-stream".to_string(),
                 );
-                response.set_body(contents);
+                response.set_body(contents.as_bytes().into());
             }
             HTTPMethod::Post => {
                 let data = request.body.unwrap();
@@ -160,6 +158,15 @@ fn runner(request: Request) -> Response {
                 // Use it
                 if encoding == "gzip" {
                     response.set_header("Content-Encoding".to_string(), "gzip".to_string());
+                    if let Some(body) = &response.body {
+                        let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
+
+                        e.write_all(body).unwrap();
+                        let compressed_bytes = e.finish().unwrap();
+                        println!("Here \n{:?}", compressed_bytes);
+
+                        response.set_body(compressed_bytes);
+                    }
                 }
 
                 break;
@@ -168,58 +175,7 @@ fn runner(request: Request) -> Response {
     }
 
     response
-
-    // let handler = handlers.get(&request.target);
-
-    // if let Some(handler) = handler {
-    //     let response = handler(request);
-    //     return response;
-    // }
-
-    // // Do a dynamic params search
-
-    // let parts = request.target.split('/').collect::<Vec<&str>>();
-    // if parts.len() < 2 {
-    //     // Path not found
-
-    //     let mut res = Response::new();
-    //     res.set_status(404, "Not Found".to_string());
-    //     return res;
-    // }
-
-    // Try matching dynamic paths to parts
-    // /path/{dyn}
-    // /echo/123
-    // dyn = 123
-
-    // 'outer: for key in handlers.keys() {
-    //     let key_parts = key.split('/').collect_vec();
-    //     if key_parts.len() != parts.len() {
-    //         continue;
-    //     }
-
-    //     let length = key_parts.len();
-
-    //     for (index, part) in key_parts.iter().enumerate() {
-    //         if !part.starts_with('{') {
-    //             if *part != parts[index] {
-    //                 continue 'outer;
-    //             }
-
-    //         }
-
-    //         request.query_param.insert(k, v)
-
-    //     }
-    // }
-    // let mut res = Response::new();
-    // res.set_status(404, "Not Found".to_string());
-    // return res;
 }
-
-// fn handler(input: Request) -> Response {}
-
-// fn echo_handler(input: Request) -> Response {}
 
 #[derive(Debug)]
 
@@ -304,7 +260,7 @@ trait ResponseValue {}
 #[derive(Clone, Debug)]
 struct Response {
     status: u16,
-    body: Option<String>,
+    body: Option<Vec<u8>>,
     status_reason: String,
     headers: HashMap<String, String>,
 }
@@ -324,7 +280,7 @@ impl Response {
         self.status_reason = status_reason;
     }
 
-    fn set_body(&mut self, body: String) {
+    fn set_body(&mut self, body: Vec<u8>) {
         self.set_header("Content-Length".to_string(), format!("{}", body.len()));
         self.body = Some(body);
     }
@@ -354,15 +310,17 @@ impl Response {
         }
         response_string.push_str("\r\n");
 
-        // Body
-        if let Some(body) = self.body.clone() {
-            response_string.push_str(&body);
-        }
-
         // Full response string
+        println!("{response_string}");
         response_string
     }
     fn into_bytes(&mut self) -> Vec<u8> {
-        self.as_string().into_bytes()
+        let mut response_bytes = self.as_string().into_bytes();
+        // Add the body
+        // Body
+        if let Some(body) = self.body.clone() {
+            response_bytes = [response_bytes, body].concat();
+        }
+        response_bytes
     }
 }

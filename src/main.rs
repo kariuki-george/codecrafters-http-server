@@ -1,17 +1,19 @@
 use std::{
     collections::HashMap,
+    fmt::format,
     io::{BufRead, BufReader, Read, Write},
     net::TcpListener,
 };
 
 use itertools::Itertools;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
 
-    let mut handlers = HashMap::new();
-    handlers.insert("/".to_string(), random_handler);
+    // let mut handlers: HashMap<String, fn(Request) -> Response> = HashMap::new();
+    // handlers.insert("/".to_string(), handler);
+    // handlers.insert("/echo/{str}".to_string(), echo_handler);
 
     for stream in listener.incoming() {
         match stream {
@@ -54,15 +56,9 @@ fn main() {
 
                 // Handle request
 
-                // Get handler
-
-                let handler = handlers.get(&request.target);
+                let mut response = runner(request);
 
                 // Write response
-                let mut response = Response::new();
-                if handler.is_none() {
-                    response.set_status(404, "Not Found".to_string());
-                }
 
                 let response = response.into_bytes();
 
@@ -76,7 +72,70 @@ fn main() {
     }
 }
 
-fn random_handler() {}
+fn runner(request: Request) -> Response {
+    // Just do enough to pass the test
+
+    let mut response = Response::new();
+
+    if request.target.starts_with("/echo") {
+        let (_, data) = request.target.rsplit_once('/').unwrap();
+
+        response.set_header("Content-Type".to_string(), json!(format!("text/plain")));
+        response.set_body(json!(format!("{data}")));
+    }
+    response
+
+    // let handler = handlers.get(&request.target);
+
+    // if let Some(handler) = handler {
+    //     let response = handler(request);
+    //     return response;
+    // }
+
+    // // Do a dynamic params search
+
+    // let parts = request.target.split('/').collect::<Vec<&str>>();
+    // if parts.len() < 2 {
+    //     // Path not found
+
+    //     let mut res = Response::new();
+    //     res.set_status(404, "Not Found".to_string());
+    //     return res;
+    // }
+
+    // Try matching dynamic paths to parts
+    // /path/{dyn}
+    // /echo/123
+    // dyn = 123
+
+    // 'outer: for key in handlers.keys() {
+    //     let key_parts = key.split('/').collect_vec();
+    //     if key_parts.len() != parts.len() {
+    //         continue;
+    //     }
+
+    //     let length = key_parts.len();
+
+    //     for (index, part) in key_parts.iter().enumerate() {
+    //         if !part.starts_with('{') {
+    //             if *part != parts[index] {
+    //                 continue 'outer;
+    //             }
+
+    //         }
+
+    //         request.query_param.insert(k, v)
+
+    //     }
+    // }
+    // let mut res = Response::new();
+    // res.set_status(404, "Not Found".to_string());
+    // return res;
+}
+
+// fn handler(input: Request) -> Response {}
+
+// fn echo_handler(input: Request) -> Response {}
 
 #[derive(Debug)]
 
@@ -86,6 +145,7 @@ struct Request {
     http_version: String,
     headers: HashMap<String, String>,
     body: Option<String>,
+    query_param: HashMap<String, String>,
 }
 
 impl Request {
@@ -96,6 +156,7 @@ impl Request {
             headers: HashMap::new(),
             http_version: String::new(),
             target: String::new(),
+            query_param: HashMap::new(),
         };
 
         // Parse input request string
@@ -172,15 +233,18 @@ impl Response {
         }
     }
 
-    fn set_status(&mut self, status: u16, status_reason: String) -> Self {
+    fn set_status(&mut self, status: u16, status_reason: String) {
         self.status = status;
         self.status_reason = status_reason;
-        self.to_owned()
     }
 
-    fn set_body(&mut self, body: Value) -> Self {
+    fn set_body(&mut self, body: Value) {
+        self.set_header("Content-Length".to_string(), json!(body.to_string().len()));
         self.body = Some(body);
-        self.to_owned()
+    }
+
+    fn set_header(&mut self, name: String, value: Value) {
+        self.headers.insert(name, value);
     }
     fn as_string(&mut self) -> String {
         // Status Line
@@ -197,9 +261,15 @@ impl Response {
         response_string.push_str("\r\n");
 
         // Headers
+        for (name, value) in self.headers.clone() {
+            response_string.push_str(format!("{}: {}\r\n", name, value).as_str());
+        }
         response_string.push_str("\r\n");
 
         // Body
+        if let Some(body) = self.body.clone() {
+            response_string.push_str(format!("{}", body).as_str());
+        }
 
         // Full response string
         response_string

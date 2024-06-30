@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    fmt::format,
     io::{BufRead, BufReader, Read, Write},
     net::TcpListener,
 };
@@ -59,6 +58,7 @@ fn main() {
                 let mut response = runner(request);
 
                 // Write response
+                println!("{:?}", response);
 
                 let response = response.into_bytes();
 
@@ -81,7 +81,7 @@ fn runner(request: Request) -> Response {
         let (_, data) = request.target.rsplit_once('/').unwrap();
 
         response.set_header("Content-Type".to_string(), "text/plain".into());
-        response.set_body(json!(format!("{data}")));
+        response.set_body(data.into());
     }
     response
 
@@ -215,10 +215,10 @@ enum HTTPMethod {
     Post,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Response {
     status: u16,
-    body: Option<Value>,
+    body: Option<String>,
     status_reason: String,
     headers: HashMap<String, serde_json::Value>,
 }
@@ -238,8 +238,8 @@ impl Response {
         self.status_reason = status_reason;
     }
 
-    fn set_body(&mut self, body: Value) {
-        self.set_header("Content-Length".to_string(), json!(body.to_string().len()));
+    fn set_body(&mut self, body: String) {
+        self.set_header("Content-Length".to_string(), body.len().into());
         self.body = Some(body);
     }
 
@@ -262,14 +262,16 @@ impl Response {
 
         // Headers
         for (name, value) in self.headers.clone() {
-            response_string.push_str(format!("{}: {}\r\n", name, value).as_str());
+            response_string.push_str(format!("{}: {}\r\n", name, value.clone().take()).as_str());
         }
         response_string.push_str("\r\n");
 
         // Body
         if let Some(body) = self.body.clone() {
-            response_string.push_str(format!("{}", body).as_str());
+            response_string.push_str(&body);
         }
+
+        println!("{response_string}");
 
         // Full response string
         response_string

@@ -110,22 +110,42 @@ fn runner(request: Request) -> Response {
         //  Check if the file exists in the provided directory
         path.push_str(file);
 
-        let mut file = match std::fs::OpenOptions::new().read(true).open(path) {
-            Ok(file) => file,
-            Err(_) => return response,
-        };
+        // Get request
+        match request.http_method {
+            HTTPMethod::Get => {
+                let mut file = match std::fs::OpenOptions::new().read(true).open(path) {
+                    Ok(file) => file,
+                    Err(_) => return response,
+                };
 
-        let mut contents = String::new();
+                let mut contents = String::new();
 
-        if file.read_to_string(&mut contents).is_err() {
-            return response;
+                if file.read_to_string(&mut contents).is_err() {
+                    return response;
+                }
+                response.set_status(200, "OK".to_string());
+                response.set_header(
+                    "Content-Type".to_string(),
+                    "application/octet-stream".to_string(),
+                );
+                response.set_body(contents);
+            }
+            HTTPMethod::Post => {
+                let data = request.body.unwrap();
+
+                let mut file = std::fs::OpenOptions::new()
+                    .create(true)
+                    .truncate(true)
+                    .write(true)
+                    .open(path)
+                    .unwrap();
+
+                file.write_all(&data.as_bytes()).unwrap();
+                file.flush().unwrap();
+
+                response.set_status(201, "Created".to_string());
+            }
         }
-        response.set_status(200, "OK".to_string());
-        response.set_header(
-            "Content-Type".to_string(),
-            "application/octet-stream".to_string(),
-        );
-        response.set_body(contents);
     }
     response
 

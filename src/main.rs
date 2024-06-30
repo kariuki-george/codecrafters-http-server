@@ -140,13 +140,23 @@ fn runner(request: Request) -> Response {
                     .open(path)
                     .unwrap();
 
-                file.write_all(&data.as_bytes()).unwrap();
+                file.write_all(data.as_bytes()).unwrap();
                 file.flush().unwrap();
 
                 response.set_status(201, "Created".to_string());
             }
         }
     }
+
+    // Compress the body
+
+    if let Some(encoding) = request.headers.get("Accept-Encoding") {
+        // If not supported
+        if encoding == "gzip" {
+            response.set_header("Content-Encoding".to_string(), "gzip".to_string());
+        }
+    }
+
     response
 
     // let handler = handlers.get(&request.target);

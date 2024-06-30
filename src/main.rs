@@ -4,7 +4,7 @@ use std::{
     net::TcpListener,
 };
 
-use flate2::{write::ZlibEncoder, Compression};
+use flate2::{write::GzEncoder, Compression};
 use itertools::Itertools;
 
 fn main() {
@@ -159,7 +159,7 @@ fn runner(request: Request) -> Response {
                 if encoding == "gzip" {
                     response.set_header("Content-Encoding".to_string(), "gzip".to_string());
                     if let Some(body) = &response.body {
-                        let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
+                        let mut e = GzEncoder::new(Vec::new(), Compression::default());
 
                         e.write_all(body).unwrap();
                         let compressed_bytes = e.finish().unwrap();

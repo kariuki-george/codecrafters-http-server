@@ -21,6 +21,7 @@ and more.
 - ✅ Request parsing and Response writing lifecycle
 - ✅ Concurrency through multithreading
 - ✅ A basic router implementation
+- ✅ Data compression with GZip
 - ✅ Example handles
 
 # Get started

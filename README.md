@@ -29,5 +29,33 @@ and more.
 git clone https://github.com/kariuki-george/codecrafters-http-server.git
 cd codecrafters-http-server
 mkdir files
-cargo run -- -- directory ./files/
+cargo run -- --directory ./files/
+```
+
+# Test
+
+On another terminal
+
+- Echo
+
+```bash
+curl http://localhost:4221/echo/hello-you
+```
+
+- Get User-Agent
+
+```bash
+curl http://localhost:4221/echo/user-agent
+```
+
+- Write into a file
+
+```bash
+curl --header "Content-Type: application/text"   --request POST   --data 'Hello from George🤭'   http://localhost:4221/files/user
+```
+
+- Read from a file
+
+```bash
+curl http://localhost:4221/files/user
 ```

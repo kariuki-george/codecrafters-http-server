@@ -44,7 +44,7 @@ pub fn get_files(request: Request, mut response: Response) -> Response {
     //  Check if the file exists in the provided directory
 
     path.push_str(file);
-    println!("{}", path);
+
     let mut file = match std::fs::OpenOptions::new().read(true).open(path) {
         Ok(file) => file,
         Err(_) => return response,
@@ -65,7 +65,7 @@ pub fn get_files(request: Request, mut response: Response) -> Response {
 }
 
 pub fn post_files(request: Request, mut response: Response) -> Response {
-    let (_, _file) = request.target.rsplit_once('/').unwrap();
+    let (_, file) = request.target.rsplit_once('/').unwrap();
     let args = std::env::args();
     let mut path = String::new();
     // Could write cleaner code
@@ -81,6 +81,7 @@ pub fn post_files(request: Request, mut response: Response) -> Response {
     }
 
     let data = request.body.unwrap();
+    path.push_str(file);
 
     let mut file = std::fs::OpenOptions::new()
         .create(true)

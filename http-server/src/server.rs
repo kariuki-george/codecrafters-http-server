@@ -11,8 +11,6 @@ use flate2::{write::GzEncoder, Compression};
 pub struct Server {
     router: Router,
 }
-//    router.insert_route("/".to_owned(), services::root);
-//  router.insert_route("/user-agent".to_owned(), services::user_agent);
 
 impl Server {
     pub fn new(router: Router) -> Self {

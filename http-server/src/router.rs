@@ -8,7 +8,7 @@ use crate::{
 use regex::Regex;
 #[derive(Clone, Default, Debug)]
 pub struct Router {
-    handlers: HashMap<String, StaticRoute>,
+    static_routes: HashMap<String, StaticRoute>,
     dynamic_routes: Vec<DynamicRoute>,
 }
 
@@ -53,7 +53,8 @@ impl Router {
             // Dynamic route
             self.insert_dynamic_route(route, handler, method)
         } else {
-            self.handlers.insert(route, StaticRoute { handler, method });
+            self.static_routes
+                .insert(route, StaticRoute { handler, method });
         }
     }
 
@@ -142,7 +143,11 @@ impl Router {
 
     pub fn get_route(&self, route: &str, method: &HTTPMethod) -> Option<RouteDetails> {
         // Try to get a static route else dynamic else None
-        if let Some(sroute) = self.handlers.get(route).map(|handler| handler.to_owned()) {
+        if let Some(sroute) = self
+            .static_routes
+            .get(route)
+            .map(|handler| handler.to_owned())
+        {
             if &sroute.method != method {
                 return None;
             }

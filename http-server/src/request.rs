@@ -1,10 +1,9 @@
-use std::{
-    collections::HashMap,
-    io::{BufRead, BufReader, Read},
+use std::collections::HashMap;
+
+use tokio::{
+    io::{AsyncBufReadExt, AsyncReadExt, BufReader},
     net::TcpStream,
 };
-
-use itertools::Itertools;
 
 #[derive(Debug, Clone)]
 
@@ -14,24 +13,25 @@ pub struct Request {
     pub http_version: String,
     pub headers: HashMap<String, String>,
     pub body: Option<String>,
+    pub path_variables: HashMap<String, String>,
 }
 
 impl Request {
-    pub fn new(stream: &mut TcpStream) -> Result<Request, String> {
+    pub async fn new(stream: &mut TcpStream) -> Result<Request, String> {
         // Read request
-        let mut reader = BufReader::new(stream);
+        let reader = &mut BufReader::new(stream);
 
         // Split lines using a space
         let mut http_parts = vec![];
-        let lines = reader
-            .by_ref()
-            .lines()
-            .map(|x| x.unwrap())
-            .take_while(|line| !line.is_empty())
-            .collect_vec();
 
-        for line in lines.clone() {
-            http_parts.push(line);
+        let lines = &mut reader.lines();
+
+        while let Some(line) = lines.next_line().await.unwrap() {
+            if line.is_empty() {
+                break;
+            }
+
+            http_parts.push(line.clone());
             http_parts.push(" ".to_string());
         }
 
@@ -43,6 +43,7 @@ impl Request {
             headers: HashMap::new(),
             http_version: String::new(),
             target: String::new(),
+            path_variables: HashMap::new(),
         };
 
         // Parse input request string
@@ -71,6 +72,7 @@ impl Request {
             "POST" => HTTPMethod::Post,
             _ => return Err("Error: HTTP method passed not supported".to_string()),
         };
+
         // Parse the headers
         if req.next().is_none() {
             return Ok(request);
@@ -90,13 +92,14 @@ impl Request {
 
             request.headers.insert(key.to_owned(), value.to_owned());
         }
+
         // Read the body if content-length is available
         if let Some(length) = request.headers.get("Content-Length") {
             let length = length.parse::<usize>().unwrap();
 
             let mut buf = vec![0; length];
 
-            reader.read_exact(&mut buf).unwrap();
+            reader.read_exact(&mut buf).await.unwrap();
 
             let data = String::from_utf8(buf).unwrap();
             request.body = Some(data)
@@ -106,7 +109,7 @@ impl Request {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum HTTPMethod {
     Get,
     Post,

@@ -1,9 +1,29 @@
-use crate::{request::Request, response::Response};
-use itertools::Itertools;
 use std::io::{Read, Write};
 
+use http_server::request::HTTPMethod::{Get, Post};
+use http_server::request::Request;
+use http_server::response::Response;
+use http_server::router::Router;
+use http_server::server::Server;
+use itertools::Itertools;
+
+#[tokio::main]
+async fn main() {
+    let mut router = Router::new();
+
+    router.insert_route("/echo/:message", echo, Get);
+    router.insert_route("/", root, Get);
+    router.insert_route("/useragent", user_agent, Get);
+    router.insert_route("/files/:filename", get_files, Get);
+    router.insert_route("/files/:filename", post_files, Post);
+
+    let server = Server::new(router);
+
+    server.listen(4221).await
+}
+
 pub fn echo(request: Request, mut response: Response) -> Response {
-    let (_, data) = request.target.rsplit_once('/').unwrap();
+    let data = request.path_variables.get("message").unwrap();
 
     response.set_header("Content-Type".to_string(), "text/plain".to_string());
     response.set_status(200, "OK".to_string());
@@ -26,10 +46,11 @@ pub fn user_agent(request: Request, mut response: Response) -> Response {
 }
 
 pub fn get_files(request: Request, mut response: Response) -> Response {
-    let (_, file) = request.target.rsplit_once('/').unwrap();
-    let args = std::env::args();
+    let filename = request.path_variables.get("filename").unwrap();
     let mut path = String::new();
+
     // Could write cleaner code
+    let args = std::env::args();
     let args = args.collect_vec();
     for (index, arg) in args.clone().iter().enumerate() {
         if arg == "--directory" {
@@ -43,7 +64,7 @@ pub fn get_files(request: Request, mut response: Response) -> Response {
 
     //  Check if the file exists in the provided directory
 
-    path.push_str(file);
+    path.push_str(filename);
 
     let mut file = match std::fs::OpenOptions::new().read(true).open(path) {
         Ok(file) => file,
@@ -65,7 +86,7 @@ pub fn get_files(request: Request, mut response: Response) -> Response {
 }
 
 pub fn post_files(request: Request, mut response: Response) -> Response {
-    let (_, file) = request.target.rsplit_once('/').unwrap();
+    let filename = request.path_variables.get("filename").unwrap();
     let args = std::env::args();
     let mut path = String::new();
     // Could write cleaner code
@@ -81,7 +102,8 @@ pub fn post_files(request: Request, mut response: Response) -> Response {
     }
 
     let data = request.body.unwrap();
-    path.push_str(file);
+
+    path.push_str(filename);
 
     let mut file = std::fs::OpenOptions::new()
         .create(true)

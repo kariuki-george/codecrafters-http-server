@@ -1,0 +1,9 @@
+[package]
+name = "hello"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+http-server = {path = "../../http-server"}
+itertools = "0.13.0"
+tokio = {workspace=true}

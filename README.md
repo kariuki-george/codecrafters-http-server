@@ -16,13 +16,17 @@ and more.
 
 # Implemented Features
 
-- ✅ TCP Connection Bind on port 4221
-- ✅ Basic HTTP protocol parsing
+- ✅ TCP Connection Bind on port of choice
+- ✅ HTTP protocol parsing
+  - Path variables
+  - Headers
+  - Body
 - ✅ Request parsing and Response writing lifecycle
-- ✅ Concurrency through multithreading
-- ✅ A basic router implementation
+- ✅ Concurrency and parallel processing through multithreading
+- ✅ A dynamic router implementation
+  - Can handle dynamic path params e.g /product/:id
 - ✅ Data compression with GZip
-- ✅ Example handles
+- ✅ Example on examples folder
 
 # Get started
 
@@ -40,13 +44,13 @@ On another terminal
 - Echo
 
 ```bash
-curl http://localhost:4221/echo/hello-you
+curl http://localhost:4221/echo/hellofriend
 ```
 
 - Get User-Agent
 
 ```bash
-curl http://localhost:4221/echo/user-agent
+curl http://localhost:4221/echo/useragent
 ```
 
 - Write into a file

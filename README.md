@@ -21,6 +21,7 @@ and more.
   - Path variables
   - Headers
   - Body
+  - Query parameters
 - ✅ Request parsing and Response writing lifecycle
 - ✅ Concurrency and parallel processing through multithreading
 - ✅ A dynamic router implementation
@@ -51,6 +52,12 @@ curl http://localhost:4221/echo/hellofriend
 
 ```bash
 curl http://localhost:4221/echo/useragent
+```
+
+- Get Request Params
+
+```bash
+curl http://localhost:4221/query?page=1&pos=1&cur_pos=1&ads_per_page=20&ads_count=20
 ```
 
 - Write into a file

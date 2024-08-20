@@ -16,10 +16,17 @@ async fn main() {
     router.insert_route("/useragent", user_agent, Get);
     router.insert_route("/files/:filename", get_files, Get);
     router.insert_route("/files/:filename", post_files, Post);
+    router.insert_route("/query", get_query_params, Get);
 
     let server = Server::new(router);
 
     server.listen(4221).await
+}
+
+pub fn get_query_params(request: Request, mut response: Response) -> Response {
+    response.set_status(200, "OK".to_string());
+    response.set_body(serde_json::to_vec_pretty(&request.query_params).unwrap());
+    response
 }
 
 pub fn echo(request: Request, mut response: Response) -> Response {

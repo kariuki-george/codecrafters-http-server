@@ -14,6 +14,7 @@ pub struct Request {
     pub headers: HashMap<String, String>,
     pub body: Option<String>,
     pub path_variables: HashMap<String, String>,
+    pub query_params: HashMap<String, String>,
 }
 
 impl Request {
@@ -44,6 +45,7 @@ impl Request {
             http_version: String::new(),
             target: String::new(),
             path_variables: HashMap::new(),
+            query_params: HashMap::new(),
         };
 
         // Parse input request string
@@ -64,7 +66,27 @@ impl Request {
         }
 
         request.http_version = parts.pop().unwrap().to_string();
-        request.target = parts.pop().unwrap().to_string();
+        // Parse target and query params if any
+        let target = parts.pop().unwrap().to_string();
+
+        if target.contains('?') {
+            let (target, q_params) = target.split_once('?').unwrap();
+            request.target = target.to_string();
+
+            for q_param in q_params.split('&') {
+                let q = q_param.split_once('=');
+
+                if q.is_none() {
+                    return Err("Invalid query params passed".to_string());
+                }
+
+                let (k, v) = q.unwrap();
+
+                request.query_params.insert(k.to_string(), v.to_string());
+            }
+        } else {
+            request.target = target
+        }
 
         // HTTP METHODs
         request.http_method = match parts.pop().unwrap() {

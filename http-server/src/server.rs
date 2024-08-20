@@ -32,11 +32,22 @@ impl Server {
 
 async fn handle_stream(mut stream: TcpStream, router: Arc<RwLock<Router>>) {
     let router = router.read().await;
+    let mut response = Response::new();
+    let request = Request::new(&mut stream).await;
 
-    let mut request = Request::new(&mut stream).await.unwrap();
+    let mut request = match request {
+        Ok(request) => request,
+        Err(err) => {
+            response.set_status(400, "BAD_REQUEST".to_string());
+            response.set_body(err.as_bytes().to_vec());
+            stream.write_all(&response.as_bytes()).await.unwrap();
+            stream.flush().await.unwrap();
+            return;
+        }
+    };
 
     let router_details = router.get_route(&request.target, &request.http_method);
-    let mut response = Response::new();
+
     println!("{:?}", request);
 
     if router_details.is_none() {
